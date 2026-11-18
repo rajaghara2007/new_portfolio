@@ -6022,6 +6022,86 @@ Email: raj.aghara2007@gmail.com | GitHub: github.com/rajaghara2007 | LinkedIn: l
   </script>
   <script>
     (() => {
+      // Helper: get exact optimal scroll position for any section
+      function getSectionScrollTarget(selector) {
+        let sel = selector;
+        if (sel === "#kinetic-tech") sel = "#hero";
+        const targetEl = document.querySelector(sel);
+        if (!targetEl) return 0;
+        if (sel === "#hero") return 0;
+
+        let st = null;
+        if (typeof ScrollTrigger !== "undefined") {
+          st = ScrollTrigger.getAll().find(s => s.trigger === targetEl || s.vars.trigger === targetEl);
+        }
+        if (!st && targetEl._achieveTl) st = targetEl._achieveTl.scrollTrigger;
+        if (!st && targetEl._journeyTl) st = targetEl._journeyTl.scrollTrigger;
+        if (!st && targetEl._flipTl) st = targetEl._flipTl.scrollTrigger;
+
+        const start = st ? st.start : targetEl.offsetTop;
+        const end = st ? st.end : (start + targetEl.offsetHeight);
+
+        if (sel === "#flip") {
+          return start + 60;
+        } else if (sel === "#scrolltrigger") {
+          return start + (end - start) * 0.28;
+        } else if (sel === "#achievements") {
+          return start + (end - start) * 0.45;
+        } else if (sel === "#contact") {
+          return targetEl.offsetTop;
+        }
+        return targetEl.offsetTop;
+      }
+
+      // Direct instant jump without scrolling through intermediate sections
+      function directJumpToSection(targetId) {
+        let sel = targetId;
+        if (sel === "#kinetic-tech") sel = "#hero";
+        const targetEl = document.querySelector(sel);
+        if (!targetEl) return;
+
+        const targetScroll = getSectionScrollTarget(sel);
+
+        if (window.lenis && typeof window.lenis.scrollTo === "function") {
+          window.lenis.scrollTo(targetScroll, { immediate: true, force: true });
+        } else {
+          window.scrollTo({ top: targetScroll, behavior: "instant" });
+        }
+
+        if (typeof ScrollTrigger !== "undefined") {
+          ScrollTrigger.update();
+        }
+
+        try {
+          history.pushState(null, "", targetId);
+        } catch (e) {}
+      }
+
+      // Intercept clicks in capture phase before Webflow or browser smooth-scroll kicks in
+      document.addEventListener("click", function(e) {
+        const link = e.target.closest('a[href^="#"]');
+        if (!link) return;
+        const href = link.getAttribute("href");
+        if (!href || href === "#" || href.length <= 1) return;
+
+        const targetEl = document.querySelector(href === "#kinetic-tech" ? "#hero" : href);
+        if (targetEl) {
+          e.preventDefault();
+          e.stopPropagation();
+          directJumpToSection(href);
+        }
+      }, true);
+
+      // Handle browser back / forward navigation directly
+      window.addEventListener("popstate", function() {
+        if (window.location.hash) {
+          directJumpToSection(window.location.hash);
+        }
+      });
+    })();
+  </script>
+  <script>
+    (() => {
       const killWebflowBadge = () => {
         document.querySelectorAll(".w-webflow-badge, a[href*='webflow.com?utm_campaign=brandjs']").forEach(el => el.remove());
       };
